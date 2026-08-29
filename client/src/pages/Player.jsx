@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { PptxRenderer } from "pptx-browser";
 import { getDeck, getDeckFile, listDecks, updateDeck } from "../api.js";
@@ -29,7 +29,27 @@ export default function Player() {
   const [thumbs, setThumbs] = useState([]);
   const [browseOpen, setBrowseOpen] = useState(false);
   const [status, setStatus] = useState("Opening deck…");
+  const [fullscreen, setFullscreen] = useState(false);
   const skipIndexRender = useRef(true);
+  const indexRef = useRef(0);
+
+  function slideRenderWidth() {
+    const stage = stageRef.current;
+    const cssWidth = stage?.clientWidth || 1600;
+    const dpr = window.devicePixelRatio || 1;
+    return Math.min(3840, Math.max(1280, Math.round(cssWidth * dpr)));
+  }
+
+  async function paintSlide(slideIndex) {
+    const renderer = rendererRef.current;
+    const dest = canvasRef.current;
+    if (!renderer || !dest) return;
+    const scratch = document.createElement("canvas");
+    await renderer.renderSlide(slideIndex, scratch, slideRenderWidth());
+    dest.width = scratch.width;
+    dest.height = scratch.height;
+    dest.getContext("2d").drawImage(scratch, 0, 0);
+  }
 
   useEffect(() => {
     listDecks().then(setLibrary).catch(() => {});
@@ -59,8 +79,7 @@ export default function Player() {
         await renderer.load(buffer);
         if (cancelled) return;
         setSlideCount(renderer.slideCount);
-        const canvas = canvasRef.current;
-        if (canvas) await renderer.renderSlide(0, canvas, 1600);
+        await paintSlide(0);
         if (cancelled) return;
         skipIndexRender.current = true;
         setLoading(false);
@@ -92,25 +111,19 @@ export default function Player() {
   }, [id]);
 
   useEffect(() => {
+    indexRef.current = index;
     if (loading || slideCount === 0) return undefined;
     if (skipIndexRender.current) {
       skipIndexRender.current = false;
       return undefined;
     }
-    const renderer = rendererRef.current;
-    if (!renderer) return undefined;
+    if (!rendererRef.current) return undefined;
     const gen = (paintGen.current += 1);
     let cancelled = false;
     (async () => {
       try {
-        const scratch = document.createElement("canvas");
-        await renderer.renderSlide(index, scratch, 1600);
+        await paintSlide(index);
         if (cancelled || gen !== paintGen.current) return;
-        const dest = canvasRef.current;
-        if (!dest) return;
-        dest.width = scratch.width;
-        dest.height = scratch.height;
-        dest.getContext("2d").drawImage(scratch, 0, 0);
       } catch {
         // Renderer was torn down while navigating between decks.
       }
@@ -141,6 +154,24 @@ export default function Player() {
   }, [playing, loading, slideCount, intervalSeconds, loop, index]);
 
   useEffect(() => {
+    function syncFullscreen() {
+      const active = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+      setFullscreen(active);
+    }
+    document.addEventListener("fullscreenchange", syncFullscreen);
+    document.addEventListener("webkitfullscreenchange", syncFullscreen);
+    return () => {
+      document.removeEventListener("fullscreenchange", syncFullscreen);
+      document.removeEventListener("webkitfullscreenchange", syncFullscreen);
+    };
+  }, []);
+
+  useLayoutEffect(() => {
+    if (loading || slideCount === 0 || !rendererRef.current) return undefined;
+    paintSlide(indexRef.current).catch(() => {});
+  }, [fullscreen, loading, slideCount]);
+
+  useEffect(() => {
     function onKey(event) {
       if (event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement) {
         return;
@@ -167,11 +198,12 @@ export default function Player() {
   function toggleFullscreen() {
     const node = stageRef.current;
     if (!node) return;
-    if (document.fullscreenElement) {
-      document.exitFullscreen().catch(() => {});
-    } else {
-      node.requestFullscreen?.().catch(() => {});
+    const active = document.fullscreenElement || document.webkitFullscreenElement;
+    if (active) {
+      (document.exitFullscreen || document.webkitExitFullscreen)?.call(document);
+      return;
     }
+    (node.requestFullscreen || node.webkitRequestFullscreen)?.call(node);
   }
 
   async function persistPace(seconds) {
@@ -215,8 +247,11 @@ export default function Player() {
         </button>
       </header>
 
-      <section className="stage-wrap" ref={stageRef}>
-        <div className="stage">
+      <section className="stage-wrap">
+        <div
+          className={`stage ${fullscreen ? "is-fullscreen" : ""}`}
+          ref={stageRef}
+        >
           <canvas ref={canvasRef} className="is-front" />
           {loading ? <div className="stage-mask">{status || "Preparing slides…"}</div> : null}
         </div>
@@ -255,7 +290,7 @@ export default function Player() {
             Loop
           </label>
           <button type="button" className="btn btn-quiet" onClick={toggleFullscreen}>
-            Full screen
+            {fullscreen ? "Exit full screen" : "Full screen"}
           </button>
         </div>
 
