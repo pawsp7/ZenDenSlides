@@ -4,7 +4,18 @@ Upload PowerPoint decks, keep them on a shelf, and play them through at a pace y
 
 **Live site:** [https://pawsp7.github.io/ZenDenSlides/](https://pawsp7.github.io/ZenDenSlides/)
 
-The hosted app stores decks in this browser (IndexedDB). Self-hosting with `npm start` keeps uploads on disk instead.
+Every push to `main` publishes a static build to the `gh-pages` branch. Decks on the hosted site stay in the browser (IndexedDB). Self-hosting with `npm start` keeps uploads on disk.
+
+### First-time Pages enablement
+
+GitHub Pages has to be switched on once for this repository:
+
+1. Open [Pages settings](https://github.com/pawsp7/ZenDenSlides/settings/pages)
+2. Set **Source** to **Deploy from a branch**
+3. Set **Branch** to `gh-pages` and the folder to `/ (root)`
+4. Save
+
+The site is then served at the URL above.
 
 ## What it does
 
