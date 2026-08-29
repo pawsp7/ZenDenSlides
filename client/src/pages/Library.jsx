@@ -21,7 +21,7 @@ function DeckCard({ deck, onDelete, onRename, onPace }) {
   return (
     <article className="deck-card">
       <Link to={`/play/${deck.id}`} className="thumb-link" aria-label={`Play ${deck.title}`}>
-        <img src={`/api/decks/${deck.id}/thumbnail`} alt="" />
+        <img src={deck.thumbnailUrl} alt="" />
         <span className="play-badge">Play</span>
       </Link>
       <div className="deck-body">

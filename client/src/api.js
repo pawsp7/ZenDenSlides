@@ -1,16 +1,63 @@
+import {
+  deleteLocalDeck,
+  getLocalDeck,
+  getLocalDeckFile,
+  listLocalDecks,
+  updateLocalDeck,
+  uploadLocalDecks,
+} from "./local-library.js";
+
+let modePromise;
+
+function detectMode() {
+  if (!modePromise) {
+    modePromise = (async () => {
+      if (import.meta.env.VITE_STORAGE === "local") return "local";
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 900);
+      try {
+        const res = await fetch("/api/health", {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        return res.ok ? "server" : "local";
+      } catch {
+        return "local";
+      } finally {
+        clearTimeout(timer);
+      }
+    })();
+  }
+  return modePromise;
+}
+
 export async function listDecks() {
+  if ((await detectMode()) === "local") return listLocalDecks();
   const res = await fetch("/api/decks");
   if (!res.ok) throw new Error(await readError(res, "Could not load the library."));
   return res.json();
 }
 
 export async function getDeck(id) {
+  if ((await detectMode()) === "local") {
+    const deck = await getLocalDeck(id);
+    if (!deck) throw new Error("Deck not found.");
+    return deck;
+  }
   const res = await fetch(`/api/decks/${id}`);
   if (!res.ok) throw new Error(await readError(res, "Deck not found."));
   return res.json();
 }
 
+export async function getDeckFile(id) {
+  if ((await detectMode()) === "local") return getLocalDeckFile(id);
+  const res = await fetch(`/api/decks/${id}/file`);
+  if (!res.ok) throw new Error(await readError(res, "Could not download this PowerPoint."));
+  return res.arrayBuffer();
+}
+
 export async function updateDeck(id, patch) {
+  if ((await detectMode()) === "local") return updateLocalDeck(id, patch);
   const res = await fetch(`/api/decks/${id}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
@@ -21,11 +68,18 @@ export async function updateDeck(id, patch) {
 }
 
 export async function deleteDeck(id) {
+  if ((await detectMode()) === "local") {
+    await deleteLocalDeck(id);
+    return;
+  }
   const res = await fetch(`/api/decks/${id}`, { method: "DELETE" });
   if (!res.ok) throw new Error(await readError(res, "Could not remove this deck."));
 }
 
-export function uploadDecks(files, intervalSeconds, onProgress) {
+export async function uploadDecks(files, intervalSeconds, onProgress) {
+  if ((await detectMode()) === "local") {
+    return uploadLocalDecks(files, intervalSeconds, onProgress);
+  }
   return new Promise((resolve, reject) => {
     const form = new FormData();
     for (const file of files) form.append("files", file);

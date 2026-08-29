@@ -8,6 +8,7 @@
     "dev": "concurrently -k -n api,web -c amber,cyan \"node server/index.js\" \"vite\"",
     "start": "NODE_ENV=production node server/index.js",
     "build": "vite build",
+    "build:pages": "GITHUB_PAGES=true vite build",
     "test": "node --test server/*.test.js",
     "seed-samples": "node scripts/generate-samples.js",
     "postinstall": "patch-package"

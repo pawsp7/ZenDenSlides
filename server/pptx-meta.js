@@ -44,8 +44,7 @@ export function placeholderThumbnail(title, slideCount) {
   const meta = encodeXml(
     slideCount === 1 ? "1 slide" : `${slideCount} slides`,
   );
-  return Buffer.from(
-    `<?xml version="1.0" encoding="UTF-8"?>
+  const svg = `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900">
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
@@ -57,9 +56,8 @@ export function placeholderThumbnail(title, slideCount) {
   <rect x="48" y="48" width="1504" height="804" fill="none" stroke="#c4784a" stroke-opacity="0.35" stroke-width="3"/>
   <text x="120" y="390" fill="#f3e6d6" font-size="72" font-family="Georgia, serif">${label}</text>
   <text x="120" y="470" fill="#b5a394" font-size="32" font-family="system-ui, sans-serif">${meta}</text>
-</svg>`,
-    "utf8",
-  );
+</svg>`;
+  return new TextEncoder().encode(svg);
 }
 
 export async function inspectPptx(buffer) {
@@ -100,7 +98,7 @@ export async function inspectPptx(buffer) {
   for (const [name, type] of thumbCandidates) {
     const file = zip.file(name);
     if (file) {
-      thumbnail = await file.async("nodebuffer");
+      thumbnail = await file.async("uint8array");
       thumbnailType = type;
       break;
     }

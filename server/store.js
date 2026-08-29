@@ -115,5 +115,6 @@ export function publicDeck(deck) {
     updatedAt: deck.updatedAt || null,
     size: deck.size,
     hasThumbnail: Boolean(deck.hasThumbnail),
+    thumbnailUrl: `/api/decks/${deck.id}/thumbnail`,
   };
 }

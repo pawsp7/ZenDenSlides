@@ -1,6 +1,10 @@
 # ZenDen Slides
 
-Upload PowerPoint decks, keep them on a shared shelf, and play them through at a pace you choose.
+Upload PowerPoint decks, keep them on a shelf, and play them through at a pace you choose.
+
+**Live site:** [https://pawsp7.github.io/ZenDenSlides/](https://pawsp7.github.io/ZenDenSlides/)
+
+The hosted app stores decks in this browser (IndexedDB). Self-hosting with `npm start` keeps uploads on disk instead.
 
 ## What it does
 
@@ -11,7 +15,7 @@ Upload PowerPoint decks, keep them on a shared shelf, and play them through at a
 
 Legacy `.ppt` files are not supported — save them as `.pptx` in PowerPoint first.
 
-## Run it
+## Run it locally
 
 ```bash
 npm install
@@ -28,6 +32,8 @@ npm start
 ```
 
 Then open [http://localhost:3000](http://localhost:3000).
+
+Pushes to `main` deploy the static site to GitHub Pages.
 
 ## Tests
 

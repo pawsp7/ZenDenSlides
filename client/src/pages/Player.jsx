@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { PptxRenderer } from "pptx-browser";
-import { getDeck, listDecks, updateDeck } from "../api.js";
+import { getDeck, getDeckFile, listDecks, updateDeck } from "../api.js";
 
 function formatClock(seconds) {
   const n = Math.max(0, seconds);
@@ -54,9 +54,7 @@ export default function Player() {
         setDeck(meta);
         setIntervalSeconds(meta.intervalSeconds);
         setStatus("Reading slides…");
-        const response = await fetch(`/api/decks/${id}/file`);
-        if (!response.ok) throw new Error("Could not download this PowerPoint.");
-        const buffer = await response.arrayBuffer();
+        const buffer = await getDeckFile(id);
         if (cancelled) return;
         await renderer.load(buffer);
         if (cancelled) return;
@@ -327,7 +325,7 @@ export default function Player() {
                       if (item.id !== id) navigate(`/play/${item.id}`);
                     }}
                   >
-                    <img src={`/api/decks/${item.id}/thumbnail`} alt="" />
+                    <img src={item.thumbnailUrl} alt="" />
                     <span>
                       <strong>{item.title}</strong>
                       <em>
