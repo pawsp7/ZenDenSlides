@@ -1,5 +1,17 @@
+diff --git a/node_modules/pptx-browser/src/colors.js b/node_modules/pptx-browser/src/colors.js
+index 2f22c89..74b60cd 100644
+--- a/node_modules/pptx-browser/src/colors.js
++++ b/node_modules/pptx-browser/src/colors.js
+@@ -262,6 +262,7 @@ export function resolveColorElement(colorEl, themeColors) {
+  */
+ export function colorToCss(c, alphaOverride) {
+   if (!c) return 'transparent';
++  if (typeof c === 'string') return c;
+   const a = alphaOverride !== undefined ? alphaOverride : (c.a ?? 1);
+   return a < 1
+     ? `rgba(${c.r},${c.g},${c.b},${a.toFixed(3)})`
 diff --git a/node_modules/pptx-browser/src/render.js b/node_modules/pptx-browser/src/render.js
-index 8d0e215..5cec1e8 100644
+index 8d0e215..5abc96c 100644
 --- a/node_modules/pptx-browser/src/render.js
 +++ b/node_modules/pptx-browser/src/render.js
 @@ -596,6 +596,8 @@ export async function renderTextBody(ctx, txBody, bx, by, bw, bh, scale, themeCo
@@ -19,3 +31,12 @@ index 8d0e215..5cec1e8 100644
  
      // Default font size: lstStyle (lowest) → pPr defRPr (higher) → run rPr (highest)
      let paraDefSz = defaultFontSz;
+@@ -869,7 +870,7 @@ export async function renderTextBody(ctx, txBody, bx, by, bw, bh, scale, themeCo
+       // ── Draw each run ──────────────────────────────────────────────────────
+       for (const run of runs) {
+         const c = run.color;
+-        ctx.fillStyle = c ? colorToCss(c) : '#000000';
++        ctx.fillStyle = typeof c === 'string' ? c : c ? colorToCss(c) : '#f3e6d6';
+ 
+         // Superscript / subscript: smaller font + vertical offset
+         let drawY = baseline;
