@@ -157,12 +157,14 @@ export default function Player() {
     function syncFullscreen() {
       const active = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
       setFullscreen(active);
+      document.documentElement.classList.toggle("is-deck-fullscreen", active);
     }
     document.addEventListener("fullscreenchange", syncFullscreen);
     document.addEventListener("webkitfullscreenchange", syncFullscreen);
     return () => {
       document.removeEventListener("fullscreenchange", syncFullscreen);
       document.removeEventListener("webkitfullscreenchange", syncFullscreen);
+      document.documentElement.classList.remove("is-deck-fullscreen");
     };
   }, []);
 
@@ -196,14 +198,20 @@ export default function Player() {
   }, [slideCount]);
 
   function toggleFullscreen() {
-    const node = stageRef.current;
-    if (!node) return;
-    const active = document.fullscreenElement || document.webkitFullscreenElement;
-    if (active) {
+    const apiActive = document.fullscreenElement || document.webkitFullscreenElement;
+    if (fullscreen || apiActive) {
+      document.documentElement.classList.remove("is-deck-fullscreen");
+      setFullscreen(false);
       (document.exitFullscreen || document.webkitExitFullscreen)?.call(document);
       return;
     }
-    (node.requestFullscreen || node.webkitRequestFullscreen)?.call(node);
+    document.documentElement.classList.add("is-deck-fullscreen");
+    setFullscreen(true);
+    const root = document.documentElement;
+    const request = root.requestFullscreen || root.webkitRequestFullscreen;
+    Promise.resolve(request?.call(root)).catch(() => {
+      /* Presentation layout still fills the window if the Fullscreen API is blocked. */
+    });
   }
 
   async function persistPace(seconds) {
