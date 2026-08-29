@@ -11,11 +11,10 @@ function formatClock(seconds) {
 export default function Player() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const canvasA = useRef(null);
-  const canvasB = useRef(null);
+  const canvasRef = useRef(null);
   const rendererRef = useRef(null);
-  const front = useRef("a");
   const stageRef = useRef(null);
+  const paintGen = useRef(0);
 
   const [deck, setDeck] = useState(null);
   const [library, setLibrary] = useState([]);
@@ -46,7 +45,7 @@ export default function Player() {
     setThumbs([]);
     setPlaying(true);
     setProgress(0);
-    front.current = "a";
+    paintGen.current += 1;
 
     (async () => {
       try {
@@ -62,21 +61,23 @@ export default function Player() {
         await renderer.load(buffer);
         if (cancelled) return;
         setSlideCount(renderer.slideCount);
-        const canvas = canvasA.current;
-        if (canvas) {
-          canvas.classList.add("is-front");
-          canvasB.current?.classList.remove("is-front");
-          front.current = "a";
-          await renderer.renderSlide(0, canvas, 1600);
-        }
+        const canvas = canvasRef.current;
+        if (canvas) await renderer.renderSlide(0, canvas, 1600);
         if (cancelled) return;
         skipIndexRender.current = true;
         setLoading(false);
         setStatus("");
-        const strip = await renderer.renderAllSlides(220);
-        if (!cancelled) {
-          setThumbs(strip.map((canvasNode) => canvasNode.toDataURL("image/jpeg", 0.72)));
+        const strip = [];
+        for (let i = 0; i < renderer.slideCount; i += 1) {
+          const thumb = document.createElement("canvas");
+          try {
+            await renderer.renderSlide(i, thumb, 220);
+            strip.push(thumb.toDataURL("image/jpeg", 0.72));
+          } catch {
+            strip.push("");
+          }
         }
+        if (!cancelled) setThumbs(strip);
       } catch (err) {
         if (!cancelled) {
           setError(err.message || "Could not open this deck.");
@@ -100,17 +101,18 @@ export default function Player() {
     }
     const renderer = rendererRef.current;
     if (!renderer) return undefined;
+    const gen = (paintGen.current += 1);
     let cancelled = false;
     (async () => {
       try {
-        const dest = front.current === "a" ? canvasB.current : canvasA.current;
+        const scratch = document.createElement("canvas");
+        await renderer.renderSlide(index, scratch, 1600);
+        if (cancelled || gen !== paintGen.current) return;
+        const dest = canvasRef.current;
         if (!dest) return;
-        await renderer.renderSlide(index, dest, 1600);
-        if (cancelled) return;
-        dest.classList.add("is-front");
-        const other = dest === canvasA.current ? canvasB.current : canvasA.current;
-        other?.classList.remove("is-front");
-        front.current = dest === canvasA.current ? "a" : "b";
+        dest.width = scratch.width;
+        dest.height = scratch.height;
+        dest.getContext("2d").drawImage(scratch, 0, 0);
       } catch {
         // Renderer was torn down while navigating between decks.
       }
@@ -217,8 +219,7 @@ export default function Player() {
 
       <section className="stage-wrap" ref={stageRef}>
         <div className="stage">
-          <canvas ref={canvasA} className="is-front" />
-          <canvas ref={canvasB} />
+          <canvas ref={canvasRef} className="is-front" />
           {loading ? <div className="stage-mask">{status || "Preparing slides…"}</div> : null}
         </div>
       </section>
