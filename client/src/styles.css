@@ -379,10 +379,13 @@ a {
 
 .stage canvas {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
   background: #000;
 }
 
@@ -433,9 +436,10 @@ html.is-deck-fullscreen .stage canvas,
 .stage:fullscreen canvas,
 .stage:-webkit-full-screen canvas,
 .stage.is-fullscreen canvas {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
   background: #000;
 }
 

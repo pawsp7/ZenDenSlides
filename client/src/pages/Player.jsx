@@ -209,9 +209,15 @@ export default function Player() {
     setFullscreen(true);
     const root = document.documentElement;
     const request = root.requestFullscreen || root.webkitRequestFullscreen;
-    Promise.resolve(request?.call(root)).catch(() => {
-      /* Presentation layout still fills the window if the Fullscreen API is blocked. */
-    });
+    Promise.resolve(request?.call(root))
+      .catch(() => {
+        /* Presentation layout still fills the window if the Fullscreen API is blocked. */
+      })
+      .finally(() => {
+        requestAnimationFrame(() => {
+          paintSlide(indexRef.current).catch(() => {});
+        });
+      });
   }
 
   async function persistPace(seconds) {
